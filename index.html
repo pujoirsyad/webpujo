@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pujo Lock</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: url('https://picsum.photos/400/800') no-repeat center/cover;
+  color: white;
+  overflow: hidden;
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+}
+
+/* SWIPE SCREEN */
+.swipe {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-direction: column;
+  text-align: center;
+}
+
+.swipe-text {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 16px;
+  opacity: 0.8;
+  animation: slideUp 1.5s infinite;
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-10px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.3; }
+}
+
+/* LOCK */
+.container {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  display: none;
+}
+
+.time { font-size: 52px; }
+.owner { font-size: 18px; opacity: 0.8; }
+.date { font-size: 14px; margin-bottom: 25px; }
+
+/* Dots */
+.dots {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 50%;
+  margin: 6px;
+}
+
+.filled {
+  background: white;
+  box-shadow: 0 0 10px white;
+}
+
+/* Keypad */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 75px);
+  gap: 15px;
+  justify-content: center;
+}
+
+.key {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.bottom {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  width: 250px;
+  margin: auto;
+  font-size: 14px;
+}
+
+/* Unlocking */
+.unlocking {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: black;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.unlocking h1 {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* Shake */
+.shake {
+  animation: shake 0.3s;
+}
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<!-- SWIPE SCREEN -->
+<div class="swipe" id="swipe">
+  <div class="swipe-text">⬆ Swipe up to unlock</div>
+</div>
+
+<!-- LOCK SCREEN -->
+<div class="container" id="lock">
+  <div class="time" id="time"></div>
+  <div class="owner">Pujo</div>
+  <div class="date" id="date"></div>
+
+  <div>Enter Passcode</div>
+  <div class="dots" id="dots"></div>
+
+  <div class="keypad">
+    <div class="key" onclick="press(1)">1</div>
+    <div class="key" onclick="press(2)">2</div>
+    <div class="key" onclick="press(3)">3</div>
+    <div class="key" onclick="press(4)">4</div>
+    <div class="key" onclick="press(5)">5</div>
+    <div class="key" onclick="press(6)">6</div>
+    <div class="key" onclick="press(7)">7</div>
+    <div class="key" onclick="press(8)">8</div>
+    <div class="key" onclick="press(9)">9</div>
+    <div></div>
+    <div class="key" onclick="press(0)">0</div>
+    <div></div>
+  </div>
+
+  <div class="bottom">
+    <div>Emergency</div>
+    <div onclick="del()">Delete</div>
+  </div>
+</div>
+
+<!-- UNLOCK -->
+<div class="unlocking" id="unlocking">
+  <h1>🔓 Unlocking...</h1>
+</div>
+
+<script>
+let startY = 0;
+let input = "";
+const correctPin = "434426";
+
+/* SWIPE DETECT */
+document.addEventListener("touchstart", e => {
+  startY = e.touches[0].clientY;
+});
+
+document.addEventListener("touchend", e => {
+  let endY = e.changedTouches[0].clientY;
+  if (startY - endY > 80) {
+    document.getElementById("swipe").style.display = "none";
+    document.getElementById("lock").style.display = "block";
+  }
+});
+
+/* PIN */
+function updateDots() {
+  const dots = document.getElementById("dots");
+  dots.innerHTML = "";
+  for (let i = 0; i < 6; i++) {
+    const d = document.createElement("div");
+    d.classList.add("dot");
+    if (i < input.length) d.classList.add("filled");
+    dots.appendChild(d);
+  }
+}
+
+function press(num) {
+  if (input.length < 6) {
+    input += num;
+    updateDots();
+  }
+  if (input.length === 6) {
+    setTimeout(checkPin, 200);
+  }
+}
+
+function del() {
+  input = input.slice(0, -1);
+  updateDots();
+}
+
+function checkPin() {
+  const lock = document.getElementById("lock");
+
+  if (input === correctPin) {
+    lock.style.opacity = "0";
+    document.getElementById("unlocking").style.display = "flex";
+
+    setTimeout(() => {
+      window.location.href = "https://imam-v6-1-743850630560.us-west1.run.app/";
+    }, 1200);
+  } else {
+    lock.classList.add("shake");
+    setTimeout(() => lock.classList.remove("shake"), 300);
+    input = "";
+    updateDots();
+  }
+}
+
+/* TIME */
+function updateTime() {
+  const now = new Date();
+  document.getElementById("time").innerText =
+    now.getHours().toString().padStart(2, '0') + ":" +
+    now.getMinutes().toString().padStart(2, '0');
+
+  document.getElementById("date").innerText =
+    now.toDateString();
+}
+
+setInterval(updateTime, 1000);
+updateTime();
+updateDots();
+</script>
+
+</body>
+</html>
